@@ -2,7 +2,7 @@
 
 > **Living document.** Update this file *before* changing code: the folder map,
 > patterns and data flows here should always match what the bot actually does.
-> Last updated: 2026-11-19
+> Last updated: 2026-11-22
 
 ## What it is
 
@@ -40,7 +40,7 @@ the score works, worked examples) is in [`automod-plan.md`](automod-plan.md).
 │                         blacklist.default.json (starter list, read at startup)        │
 └──────────────────────────────────────────────────────────────────────────────────────┘
 
-set-avatar.js ── one-off script ── REST: PATCH /users/@me (avatar.png) ──► Discord
+set-avatar.js ── one-off script ── REST: PATCH /users/@me (avatar.gif/.png) ──► Discord
 ```
 
 ## Folder structure
@@ -62,9 +62,10 @@ AllegationList/
 │   ├── allegationlist.service  systemd unit: start on boot, restart on crash, locked-down permissions
 │   └── deploy.cmd         Runs on this PC: packs the project, uploads it over SSH, runs setup-server.sh
 ├── DEPLOY.md              Step-by-step guide to hosting on Oracle Cloud's free tier
-├── set-avatar.js          One-off: uploads avatar.png as the bot's profile picture
-├── avatar.png             Bot profile picture (512×512)
-├── avatar.old.png         The previous profile picture, kept as a backup
+├── set-avatar.js          One-off: uploads a picture as the bot's profile picture (default avatar.gif; PNG/JPEG/GIF)
+├── avatar.gif             Bot profile picture (animated, 480×476)
+├── avatar.png             The previous (still) profile picture, kept as a backup
+├── avatar.old.png         The original profile picture, kept as a backup
 ├── package.json           Dependencies (discord.js), `start` and `test` scripts
 ├── package-lock.json      Exact installed versions
 ├── .env                   SECRET — DISCORD_TOKEN, CLIENT_ID, GUILD_ID (git-ignored)
