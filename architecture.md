@@ -272,6 +272,11 @@ storage.js  → automod.js (default thresholds only)
    look-alike letters mapped, lower-case).
 2. Two **views** are built: one where digits/symbols become letters (`ch1ck3n`), one where
    they are separators (`cat!`). Then `l→i`, `ph→f`, `ck→k`, `qq→gg`, repeated letters collapsed (trailing `!`, `|`, `+` count as punctuation).
+   A plain number of two or more digits that doesn't touch a letter or leet symbol
+   (`480 nuggets`) stays a number in the letter view too, so it can't read as a word.
+   Single digits still count as letters, so spaced-out disguises (`c h 1 c k 3 n`) are
+   still caught, as are digits mixed into a word (`ch1ck3n`). Numeric terms are matched
+   separately on the original digits, so they're unaffected.
 3. **Candidates**: each word, spaced-out letters glued (`C H i c k e n`), adjacent word
    pairs joined (`chick en`), multi-word windows, and digit runs (for numeric terms).
 4. **Score** per term: exact 1.00 · spaced 0.98 · suffix (`s es z er ers ed ing y ish`)

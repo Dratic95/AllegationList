@@ -177,6 +177,17 @@ describe('phrases', () => {
   test('words in between break the phrase', () => assert.equal(outcome('kill the time'), 'accept'));
 });
 
+describe('plain numbers are not words', () => {
+  // "8008" would read as "boob" in the letter view; on its own it's just a number.
+  const l = compileList({ terms: [{ term: 'boob' }, { term: 'chicken' }] });
+  test('a standalone number is accepted', () => {
+    for (const text of ['He ate 8008 nuggets', '8008', 'call 8008.', 'room 8008, floor 2']) assert.equal(outcome(text, l), 'accept', text);
+  });
+  test('digits mixed into a word are still read as letters', () => {
+    for (const text of ['b008', '8oo8', 'ch1ck3n', 'c h 1 c k 3 n']) assert.equal(outcome(text, l), 'reject', text);
+  });
+});
+
 describe('numeric terms', () => {
   test('exact number rejects', () => assert.equal(outcome('code 1234 now'), 'reject'));
   test('longer numbers and lookalike words pass', () => {

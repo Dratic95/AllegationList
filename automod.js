@@ -80,6 +80,9 @@ const MARKS_AND_INVISIBLES = /[\p{M}\p{Cf}]/gu; // accents, zero-width chars, bi
 const ASCII_LETTERS = /^[a-z]+$/;
 // One or more of ! ¡ | + not followed by a letter, digit or another leet symbol.
 const TRAILING_PUNCTUATION = /[!¡|+]+(?![\p{L}\p{N}@$€£¢])/gu;
+// Two or more digits on their own: not touching a letter, another digit or a leet symbol.
+// Single digits are left alone so spaced-out disguises ("c h 1 c k 3 n") still work.
+const PLAIN_NUMBER = /(?<![\p{L}\p{N}@$€£¢!¡|+])\d{2,}(?![\p{L}\p{N}@$€£¢!¡|+])/gu;
 
 /**
  * First, cheap normalisation: compatibility-decompose (folds full-width and "fancy"
@@ -99,8 +102,9 @@ export function lightNormalize(text) {
  * letters are NOT collapsed here; makeToken() does that so it can remember the runs.
  */
 function skeletonText(light, useLeet) {
-  // "!", "|" and "+" at the end of a word are punctuation ("ch!cken!"), not letters.
-  const source = useLeet ? light.replace(TRAILING_PUNCTUATION, ' ') : light;
+  // "!", "|" and "+" at the end of a word are punctuation ("ch!cken!"), not letters, and a
+  // plain number ("480 nuggets") is a number, not a word written in digits.
+  const source = useLeet ? light.replace(TRAILING_PUNCTUATION, ' ').replace(PLAIN_NUMBER, ' ') : light;
   let out = '';
   for (const ch of source) {
     const mapped = useLeet ? (LEET.get(ch) ?? ch) : ch;
