@@ -26,7 +26,7 @@ Status key: ✅ fixed · ➖ accepted as-is (reason given)
 |---|---|---|
 | 6 | `strict` terms still matched split words ("chick en"), contradicting the docs. | ✅ |
 | 7 | Startup race: a `/new` arriving before the rebuild was queued could be numbered from the stale saved list. | ✅ Rebuild is queued first. |
-| 8 | Reject cooldown of 0 also removed the normal 30 s cooldown, allowing unthrottled spam of log cards and disk writes. | ✅ A rejection always waits at least the normal 30 s. |
+| 8 | Reject cooldown of 0 also removed the normal 30 s cooldown, allowing unthrottled spam of log cards and disk writes. | ✅ A rejection always waits at least the normal cooldown (30 s by default; since 2026-11-22 mods can set it, 5 s minimum). |
 | 9 | A mod overriding a rejection didn't remove the strike it caused. | ✅ Strike removed (an already-applied timeout is left to mods). |
 | 10 | Admins collected strikes and triggered "can't time out" log spam. | ✅ Admins don't get strikes. |
 | 11 | `/blacklist remove`, `unallow`, `allow` changed settings in memory before a limit check could fail → unsaved, stale-cache changes. | ✅ Checks first, then change. |

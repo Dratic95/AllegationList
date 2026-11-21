@@ -107,8 +107,12 @@ export function guildData(guildId) {
 /** Limits shared by the settings repair below and the slash command options. */
 export const LIMITS = Object.freeze({
   threshold: { min: 0.05, max: 1 },
-  // Never shorter than the normal cooldown, or a rejection would let people retry faster.
-  rejectCooldownSeconds: { min: 30, max: 86_400, default: 30 },
+  // Seconds between allegations from one member. The 5 s floor keeps one spammer from
+  // pushing the bot into Discord's rate limits for everyone.
+  cooldownSeconds: { min: 5, max: 86_400, default: 30 },
+  // After an automatic rejection. The normal cooldown still applies if it's longer (see
+  // /new allegation), so a rejection never lets anyone retry sooner.
+  rejectCooldownSeconds: { min: 5, max: 86_400, default: 30 },
   strikeLimit: { min: 1, max: 50, default: 3 },
   strikeWindowMinutes: { min: 1, max: 43_200, default: 1_440 }, // up to 30 days
   timeoutMinutes: { min: 1, max: 40_320, default: 10 }, // Discord's timeout maximum is 28 days
@@ -134,6 +138,7 @@ export function automodSettings(guildId) {
   if (typeof s.enabled !== 'boolean') s.enabled = true;
   if (!isSnowflake(s.reviewChannelId)) s.reviewChannelId = null;
   if (typeof s.logRejections !== 'boolean') s.logRejections = true;
+  s.cooldownSeconds = intOr(s.cooldownSeconds, LIMITS.cooldownSeconds);
   s.rejectCooldownSeconds = intOr(s.rejectCooldownSeconds, LIMITS.rejectCooldownSeconds);
 
   const t = isPlainObject(s.thresholds) ? s.thresholds : {};

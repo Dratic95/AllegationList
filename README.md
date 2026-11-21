@@ -24,15 +24,16 @@ built-in automatic moderator (automod) before it's posted.
   private review channel. Moderators edit the blacklist and allowlist and tune every
   automod setting with slash commands.
 - **Optional automatic timeouts** after a configurable number of rejections.
+- **Configurable cooldown** between allegations, set by the moderators.
 
 ## Commands
 
 | Command | Who | What it does |
 |---|---|---|
-| `/new allegation` | Everyone | File an allegation (30-second cooldown) |
+| `/new allegation` | Everyone | File an allegation (cooldown set by the mods, 30 seconds by default) |
 | `/ping` | Everyone | Check the bot is online |
 | `/blacklist add · remove · allow · unallow · list` | Moderators | Edit the server's word lists |
-| `/automod status · enable · thresholds · review-channel · log-rejections · reject-cooldown · strikes · test` | Moderators | Configure automod |
+| `/automod status · enable · thresholds · review-channel · log-rejections · cooldown · reject-cooldown · strikes · test` | Moderators | Configure automod |
 
 ## Running it yourself
 

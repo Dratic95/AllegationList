@@ -169,7 +169,7 @@ storage.js  → automod.js (default thresholds only)
   never gaps; the next allegation gets `list length + 1`.
 - **One list change at a time per server.** Posting, deletions and the startup rebuild
   all go through a per-server queue (`serial()`), so two of them can never interleave and
-  give out the same number. Posting is rare (30 s cooldown per user), so the queue is
+  give out the same number. Posting is rare (a cooldown of at least 5 s per user), so the queue is
   never a bottleneck.
 - **Renumbering runs in the background.** A per-server worker repeatedly finds the first
   allegation whose shown number differs from its position and edits it, until none differ.
@@ -183,9 +183,12 @@ storage.js  → automod.js (default thresholds only)
   renumbers. This also migrates servers from the old "counter only" format.
 - **Recreated channel starts again at #1.** If the allegations channel was deleted and
   is recreated, the list is reset, because none of the old allegations exist any more.
-- **Variable cooldowns.** The cooldown map stores "blocked until" times: 30 s after a
-  normal submission, a mod-configured length (never less than 30 s) after an automatic
-  rejection. Cleared if
+- **Variable cooldowns.** The cooldown map stores "blocked until" times. After a normal
+  submission: the server's cooldown (`/automod cooldown`, 5 s to 1 day, default 30 s; the
+  5 s floor keeps a spammer from pushing the bot into Discord's rate limits). After an
+  automatic rejection: the reject cooldown, or the normal cooldown if that is longer, so a
+  rejection never lets anyone retry sooner. A changed setting applies to the next
+  submission; cooldowns already running keep their end time. Cleared if
   the command fails. Swept every 5 minutes. Members with the **Administrator** permission
   are exempt from both: they can file as often as they like. (Automod still screens what
   they file, but admins never get strikes, since they can't be timed out.)
@@ -233,6 +236,7 @@ storage.js  → automod.js (default thresholds only)
         "reviewChannelId": null,
         "thresholds": { "reject": 0.9, "review": 0.75 },
         "logRejections": true,
+        "cooldownSeconds": 30,
         "rejectCooldownSeconds": 30,
         "strikes": { "enabled": false, "limit": 3, "windowMinutes": 1440, "timeoutMinutes": 10 },
         "added":   [{ "term": "…", "action": "reject", "match": "fuzzy", "by": "<user id>", "at": 0 }],
@@ -327,7 +331,7 @@ guildCreate → create locked allegations channel → save its id → post intro
 
 ### 3. `/new allegation <text>`
 ```
-validate (in server, not blank) → cooldown check → start 30 s cooldown (both skipped for admins) → deferReply (private)
+validate (in server, not blank) → cooldown check → start the server's cooldown (both skipped for admins) → deferReply (private)
  → automod off? → accept
  → screen(): scan(text, server's compiled list, thresholds)
    accept → postAllegation() (in the server queue): channel → N = list length + 1
@@ -337,7 +341,7 @@ validate (in server, not blank) → cooldown check → start 30 s cooldown (both
           → save pending item → post review card [Approve] [Reject] [Reject + add word]
             (card failed → pending item removed, error reply)
           → "🕵️ sent to the moderators for review"
-   reject → cooldown = rejectCooldownSeconds
+   reject → cooldown = max(rejectCooldownSeconds, cooldownSeconds)
           → logging on? → save pending item (kind "rejected") → post log card [Override & post]
           → strikes on (and not an admin)? → record strike → limit reached within window? → timeout member,
             clear their strikes, note it in the review channel
@@ -359,7 +363,7 @@ Missing item (already handled / expired) → private "already handled" reply
 /blacklist add|remove|allow|unallow → validate → update data.json → drop the server's
                                       compiled-list cache → log the change to the review channel
 /blacklist list                     → private .txt attachment
-/automod status|enable|thresholds|review-channel|log-rejections|reject-cooldown|strikes|test
+/automod status|enable|thresholds|review-channel|log-rejections|cooldown|reject-cooldown|strikes|test
 ```
 
 ### 6. An allegation is deleted

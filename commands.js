@@ -15,7 +15,7 @@ import {
   ApplicationIntegrationType,
 } from 'discord.js';
 import { guildData, automodSettings, trySave, LIMITS } from './storage.js';
-import { postAllegation, COOLDOWN_SECONDS, cooldownKey, cooldownLeft, startCooldown, clearCooldown } from './allegations.js';
+import { postAllegation, cooldownKey, cooldownLeft, startCooldown, clearCooldown } from './allegations.js';
 import {
   screen,
   queueForReview,
@@ -70,10 +70,11 @@ const newCommand = {
     // Admins can file as often as they like: no cooldown, before or after (automod still applies).
     const isAdmin = interaction.memberPermissions.has(P.Administrator);
     const key = cooldownKey(interaction.guildId, interaction.user.id);
+    const settings = automodSettings(interaction.guildId);
     if (!isAdmin) {
       const wait = cooldownLeft(key);
       if (wait) return reply(interaction, `⏳ Slow down! You can file another allegation in ${wait}s.`);
-      startCooldown(key, COOLDOWN_SECONDS); // set now so rapid double-submits are blocked too
+      startCooldown(key, settings.cooldownSeconds); // set now so rapid double-submits are blocked too
     }
 
     let keepCooldown = false;
@@ -112,7 +113,8 @@ const newCommand = {
 
       // Rejected. The blocked word is deliberately not shown, so the filter can't be probed.
       keepCooldown = true;
-      if (!isAdmin) startCooldown(key, automodSettings(interaction.guildId).rejectCooldownSeconds);
+      // Never shorter than the normal cooldown, so a rejection can't speed up a retry.
+      if (!isAdmin) startCooldown(key, Math.max(settings.rejectCooldownSeconds, settings.cooldownSeconds));
       try {
         await interaction.editReply(
           '❌ Your allegation was automatically rejected because it contains a blocked word or phrase. ' +
@@ -262,12 +264,25 @@ const automodCommand = {
     )
     .addSubcommand((sub) =>
       sub
+        .setName('cooldown')
+        .setDescription('How long members must wait between allegations')
+        .addIntegerOption((o) =>
+          o
+            .setName('seconds')
+            .setDescription(`Seconds (${LIMITS.cooldownSeconds.min} to ${LIMITS.cooldownSeconds.max}; default ${LIMITS.cooldownSeconds.default})`)
+            .setRequired(true)
+            .setMinValue(LIMITS.cooldownSeconds.min)
+            .setMaxValue(LIMITS.cooldownSeconds.max),
+        ),
+    )
+    .addSubcommand((sub) =>
+      sub
         .setName('reject-cooldown')
         .setDescription('How long someone must wait after an automatic rejection')
         .addIntegerOption((o) =>
           o
             .setName('seconds')
-            .setDescription('Seconds (at least 30, the normal cooldown)')
+            .setDescription('Seconds (the normal cooldown still applies if it is longer)')
             .setRequired(true)
             .setMinValue(LIMITS.rejectCooldownSeconds.min)
             .setMaxValue(LIMITS.rejectCooldownSeconds.max),
@@ -329,7 +344,8 @@ const AUTOMOD_HANDLERS = {
       .addFields(
         { name: 'Reject at', value: percent(s.thresholds.reject), inline: true },
         { name: 'Review at', value: percent(s.thresholds.review), inline: true },
-        { name: 'Reject cooldown', value: `${s.rejectCooldownSeconds}s`, inline: true },
+        { name: 'Cooldown', value: `${s.cooldownSeconds}s`, inline: true },
+        { name: 'Reject cooldown', value: `${Math.max(s.rejectCooldownSeconds, s.cooldownSeconds)}s`, inline: true },
         { name: 'Review channel', value: s.reviewChannelId ? `<#${s.reviewChannelId}>` : 'Private #allegation-review (created when first needed)' },
         { name: 'Log rejections', value: s.logRejections ? 'Yes' : 'No', inline: true },
         { name: 'Waiting for review', value: String(counts.review), inline: true },
@@ -398,9 +414,20 @@ const AUTOMOD_HANDLERS = {
     await saved(interaction, `Automatic rejections will ${s.logRejections ? '' : 'no longer '}be logged in the review channel.`);
   },
 
+  async cooldown(interaction, s) {
+    s.cooldownSeconds = interaction.options.getInteger('seconds', true);
+    const note =
+      s.rejectCooldownSeconds < s.cooldownSeconds ? ` This is also the wait after an automatic rejection, since the reject cooldown is shorter.` : '';
+    await saved(interaction, `Members can now file one allegation every **${s.cooldownSeconds}s**.${note}`);
+  },
+
   async 'reject-cooldown'(interaction, s) {
     s.rejectCooldownSeconds = interaction.options.getInteger('seconds', true);
-    await saved(interaction, `After an automatic rejection people must wait **${s.rejectCooldownSeconds}s**.`);
+    const note =
+      s.rejectCooldownSeconds < s.cooldownSeconds
+        ? ` That's shorter than the normal cooldown, so people will wait the normal **${s.cooldownSeconds}s** instead.`
+        : '';
+    await saved(interaction, `After an automatic rejection people must wait **${s.rejectCooldownSeconds}s**.${note}`);
   },
 
   async strikes(interaction, s) {

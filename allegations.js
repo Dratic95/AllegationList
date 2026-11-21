@@ -11,8 +11,6 @@ import { EmbedBuilder, RESTJSONErrorCodes } from 'discord.js';
 import { guildData, trySave } from './storage.js';
 import { getAllegationsChannel } from './channels.js';
 
-export const COOLDOWN_SECONDS = 30; // one allegation per user per server every 30 s
-
 const NO_MENTIONS = Object.freeze({ parse: [] });
 const TITLE = /^Allegation #(\d+)$/;
 const titleFor = (number) => `Allegation #${number}`;
