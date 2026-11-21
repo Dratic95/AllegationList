@@ -1,0 +1,50 @@
+# systemd unit for the AllegationList Discord bot.
+# Installed to /etc/systemd/system/ by setup-server.sh; see DEPLOY.md.
+#
+#   sudo systemctl status allegationlist      is it running?
+#   sudo journalctl -u allegationlist -f      live logs
+#   sudo systemctl restart allegationlist     restart
+
+[Unit]
+Description=AllegationList Discord bot
+# Wait for the network, so the first login attempt after a boot doesn't fail.
+Wants=network-online.target
+After=network-online.target
+# Never give up restarting (by default systemd stops after 5 quick failures).
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=allegationlist
+Group=allegationlist
+WorkingDirectory=/opt/allegationlist
+ExecStart=/usr/bin/node --env-file=/opt/allegationlist/.env index.js
+Restart=always
+RestartSec=10
+# index.js leaves Discord cleanly on SIGTERM and exits 0.
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+# Hardening: the bot only needs to write its own folder and talk to Discord.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/allegationlist
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

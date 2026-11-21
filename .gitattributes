@@ -1,0 +1,4 @@
+# Keep the server scripts runnable: Windows batch needs CRLF, Linux files need LF.
+*.cmd text eol=crlf
+*.sh text eol=lf
+*.service text eol=lf
